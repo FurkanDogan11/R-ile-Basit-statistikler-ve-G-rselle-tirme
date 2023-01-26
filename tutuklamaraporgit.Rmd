@@ -1,0 +1,127 @@
+---
+title: "USArrests Rapor"
+output:
+  pdf_document: default
+  html_document: default
+date: "2023-01-23"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Amerikada Eyaletlere Göre Suç Oranları / Veriyi Tanıma
+
+Bu raporda "*USArrests*" verisindeki eyaletlere göre şiddet içeren suç oranlarının görselleştirme ve modelleme işlemlerini yapıp, verileri yorumlayacağız.
+
+Verimizdeki değişkenlerin açıklamaları;
+
+1)**Murder**: Cinayet tutuklamaları (100.000 kişiye oranla)\
+2)**Assault**: Saldırı dolaylı tutuklamalar (100.000 kişiye oranla)\
+3)**UrbanPop**: Yüzdesel kent nüfusu\
+4)**Rape**: Tecavüz nedeniyle tutuklamalar (100.000 kişiye oranla)
+
+Verimizin özetini görelim:
+
+```{r USArrests}
+summary(USArrests)
+```
+
+Eğer var ise verideki eksik değerleri kaldıralım:
+
+```{r eksik deger}
+is.na(USArrests)
+file1 <- na.omit(USArrests)
+```
+
+Verimizde eksik veya hatalı değer olmadığını "*FALSE*" çıktıları ile anlayabiliriz.
+
+## Basit İstatistikler
+
+Bu kısımda sırasıyla verideki değişkenlerin **minimumlarını**, **maksimumlarını**, **medyanlarını**, **standart sapmalarını**, **ortalamalarını** inceleyip, her birini tek veri seti altında birleştireceğiz.
+
+```{r basit istatistikler, echo=TRUE}
+Min<-apply(USArrests, 2, min)
+Max<-apply(USArrests, 2, max)
+Med<-apply(USArrests, 2, median)
+Sd<-apply(USArrests, 2, sd)
+Mean<-apply(USArrests, 2, mean)
+Bstat<<-data.frame(Min,Max,Med,Sd,Mean)
+Bstat
+```
+
+Ortalaması en yüksek tutuklanmalar saldırı suçundan kaynaklanıyor iken, cinayet açık bir farkla en az rastlanan suç konumunda.
+
+## Korelasyon
+
+Korelasyon hesaplamaları ile değişkenlerimiz arasındaki doğrusal ilişkilere göz atalım.
+
+```{r korelasyon}
+f1<-scale(file1)
+op1 <- dist(file1, method = "euclidean" )
+print("Distance measure yöntemi ile korelasyon")
+cor <- cor(t(f1), method = "pearson")
+dist_cor <- as.dist(1 - cor)
+round(as.matrix(dist_cor)[1:6,1:6],1)
+```
+
+"*Distance measure*" yöntemi ile veriler arasındaki mesafeyi gözlemledik. "*Pearson*" metodu ise korelasyon katsayısını gözlemlememizi sağlar.
+
+## Görselleştirmeler
+
+Bu bölümde, bulduğumuz verileri daha iyi anlayabilmek için görselleştirmeye başvuracağız.
+
+```{r gorsellestirme}
+plot(f1)
+boxplot(f1)
+```
+
+Korelasyon çizimleri:
+
+```{r kor gorsellestirme}
+#corrplot(as.matrix(head(f1,15)), is.corr = FALSE, method = "ellipse",hclust = "complete")
+#corrplot(as.matrix(f1), is.corr = FALSE, method = "number", order="original", type = "upper")
+```
+
+![](corrplot.png)
+
+![](corrplot2.png)
+
+Temel bileşen analizi (*Principal component analysis*) ile tüm noktalara uzaklığı en yakın olan, "**en doğru**" noktayı seçelim:
+
+```{r principal component analysis}
+a<-prcomp(file1,center=TRUE,scale=TRUE)
+summary(a)
+#fviz.eig(a)
+#fviz_pca_biplot(a)
+```
+
+![](orta.png)
+
+Virginia ve Delaware'in tüm noktalara uzaklığı en yakın olan, yani tutuklama oranlarının tüm Amerika eyaletlerinin ortalamasına en yakın olan eyaletler olduğunu gözlemleyebiliriz.
+
+## Popülasyonun Suç Üzerindeki Etkisi
+
+Bu bölümde eyaletlerin kalabalık oluşuna göre tutuklanma sıklıklarını görselleştirelim. Her bir değişken için aynı kodu takip edelim;
+
+```{r murder pop}
+plot(x = file1$Murder, y = file1$UrbanPop, col = "red", xlab = "Cinayet Oranı", ylab = "Popülasyon Oranı", main = "Popülasyona Oranla Cinayet")
+```
+
+![](sald%C4%B1r%C4%B1.png)
+
+![](tecav%C3%BCz.png)
+
+Hem cinayet, hem saldırı, hem de tecavüz oranlarının popülasyonu yüksek eyaletlerde daha çok görüldüğünü bu görselleştirmelerle saptayabiliriz.
+
+Ayrıca "İnsani Gelişmişlik" skorlarına göre 3 gelişmiş Amerikan eyaletini (Massachusetts, Connecticut, Minnesota) ve 3 gelişmemiş eyaleti (Mississippi, West Virginia, Alabama) şu şekilde karşılaştırabiliriz.
+
+![](karsilastirmamurder.png)
+
+![](karsilastirmatecavuz.png)
+
+![](karsilastirmasald%C4%B1r%C4%B1.png)
+
+3 farklı suçta da 3-6 aralığındaki gelişmemiş eyaletlerin aralıklarının ve tepe noktalarının yukarıda olduğunu, yani suçların daha fazla işlendiğini görüyoruz.
+
+
