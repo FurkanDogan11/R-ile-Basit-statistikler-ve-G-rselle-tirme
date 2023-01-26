@@ -1,0 +1,1 @@
+# R-ile-Basit-statistikler-ve-G-rselle-tirme
